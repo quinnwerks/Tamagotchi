@@ -28,15 +28,29 @@ stwio r10,  8(r8)
 movui r10, 0x5F5
 stwio r10, 12(r8)
 
-# initalize keyboard interrput ????
+# initalize keyboard interrupt ????
 
 
 
 
 
 
-
+# configure CPU to interrupt
+# interrupt
+movi r10, 1
+wrctl ienable, r10
+wrctl status, r10
 
 # start loop
 loop:
 br loop
+
+
+.section .exceptions, "ax"
+myISR:
+
+
+
+
+addi ea, ea, -4
+eret
