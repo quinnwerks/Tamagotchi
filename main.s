@@ -7,7 +7,6 @@ FOOD:
 VGA_STATE:
 .word 0
 
-
 .section .text
 .global _start
 _start:
