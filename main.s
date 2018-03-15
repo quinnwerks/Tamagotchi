@@ -1,14 +1,16 @@
 .section .data
 .equ TIMER1, 0xFF202000
+.align 2
+# globabl variables
+FOOD:
+.word 0
+VGA_STATE:
+.word 0
+
+
 .section .text
 .global _start
 _start:
-
-/* @ tiger is this format okay? I want to have nice indenting to make the
-   structure more clear. Up to debate tho. message me and lemme know.
-*/
-
-#no need to indent main
 
 # initalize stack pointer
 movi sp, sp, 0x00FFFFFC
