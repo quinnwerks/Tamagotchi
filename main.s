@@ -2,7 +2,7 @@
 .equ TIMER1, 0xFF202000
 .align 2
 # globabl variables
-FOOD:
+HP:
 .word 0
 VGA_STATE:
 .word 0
