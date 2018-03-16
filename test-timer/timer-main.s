@@ -3,7 +3,7 @@
 .align 2
 # globabl variables
 HP:
-.word 0
+.word 50
 VGA_STATE:
 .word 0
 
@@ -12,7 +12,7 @@ VGA_STATE:
 _start:
 
 # initalize stack pointer
-movi sp, sp, 0x00FFFFFC
+movia sp, 0x00FFFFFC
 
 # initalize devices
 # initalize timer 1
@@ -37,16 +37,20 @@ movi r10, 1
 wrctl ienable, r10
 wrctl status, r10
 
+#start the timer
+ldwio r10, 4(r8)
+ori r10, r10, 0x4
+stwio r10, 4(r8)
+
 # start loop
 loop:
 br loop
-
 
 .section .exceptions, "ax"
 myISR:
 # store stuff in stack
 # determine which interrput occured
-
+call foodtimer
 
 addi ea, ea, -4
 eret
