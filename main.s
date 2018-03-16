@@ -3,7 +3,7 @@
 .align 2
 # globabl variables
 HP:
-.word 0
+.word 50
 VGA_STATE:
 .word 0
 
@@ -12,30 +12,9 @@ VGA_STATE:
 _start:
 
 # initalize stack pointer
-movi sp, sp, 0x00FFFFFC
-
-# initalize devices
-# initalize timer 1
-movia r8, TIMER1
-
-# enable continue and interrupt r10 = (b11)
-movi r10, 0x03
-stwio r10, 4(r8)
-
-# store time (r10 is now time = 1 second)
-movui r10, 0xE100
-stwio r10,  8(r8)
-movui r10, 0x5F5
-stwio r10, 12(r8)
-
-# initalize keyboard interrupt ????
+movia sp, sp, 0x00FFFFFC
 
 
-# configure CPU to interrupt
-# r10 is now both irq line and PIE
-movi r10, 1
-wrctl ienable, r10
-wrctl status, r10
 
 # start loop
 loop:
