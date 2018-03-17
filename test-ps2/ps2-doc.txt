@@ -1,0 +1,15 @@
+This is a documentation for the ps2 test program.
+
+Test Program:
+test-ps2 specifies a program which upon interrupted by PS/2 keyboard, it
+intercepts the input from the keyboard and write to UART on release
+
+Specifications:
+controller 1: 0xFF200100
+base: 31:16 Number of characters letft to be read
+      15 read data valid
+      7:0 data
+base+4: 10: error
+        8: interrupt pending
+        0: interrupt enable
+IRQ: 7
