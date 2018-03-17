@@ -1,5 +1,6 @@
 .section .data
 .equ TIMER1, 0xFF202000
+.section .data
 .align 2
 # globabl variables
 HP:
