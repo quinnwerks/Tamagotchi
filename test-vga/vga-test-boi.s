@@ -1,5 +1,6 @@
 .equ ADDR_VGA, 0x08000000
 .equ VGATIMER, 0xff202020
+.equ SECOND, 50000000
 .equ red, 0xF100
 .equ blue, 0x001F
 .equ green, 0x07E0
@@ -14,14 +15,23 @@ VGA_STATE_OLD:
 .section .text
 .global _start
 _start:
-  movia r8,ADDR_VGA
+  # initalize devices
+  # initalize timer 1
+  movia r14, VGATIMER
+  stwio r0, 0(r14)
+  movui r10, %lo(SECOND)
+  stwio r10,  8(r14)
+  movui r10, %hi(SECOND)
+  stwio r10, 12(r14)
 
-  movia r10, VGA_STATE
-  movia r12, VGA_STATE_OLD
+
+
 
 
 
 loadNewState:
+  movia r10, VGA_STATE
+  movia r12, VGA_STATE_OLD
   ldw r11, 0(r10)
 
   beq r0, r11, wrRed # state is 0
@@ -54,12 +64,32 @@ wrYellow:
   br writePixel
 
 writePixel:
+  movia r8,ADDR_VGA
   sthio r9,1032(r8) /* pixel (4,1) is x*2 + y*1024 so (8 + 1024 = 1032) */
 
-holdState:
+  #start the timer
+  ldwio r15, 4(r14)
+  ori r15, r10, 0x4
+  stwio r15, 4(r14)
+
+pollVGA:
+  ldwio r15, (r14)
+  andi r15, r15, 1
+  beq r0, r15, pollVGA
+
   stw r11, (r12)
-  ldw r13, (r10)
-  beq r11, r13, holdState
+  ldw r11, (r10)
+  movi r15, 3
+  beq r15, r11, resetState
+  addi r11, r11, 1
+  br storeNewState
+resetState:
+  mov r11, r0
+
+storeNewState:
+  stwio r0, (r14)
+  stw r11, (r10)
+
 
   br loadNewState
 
