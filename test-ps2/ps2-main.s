@@ -1,7 +1,7 @@
 .equ UART, 0xFF201000
 .equ PS2, 0xFF200100
 
-section .exceptions, "ax"
+.section .exceptions, "ax"
 ISR:
 addi sp, sp, -4
 stw r16, 0(sp)
@@ -26,13 +26,13 @@ beq r2, et, dealloc
 call readPS2
 addi sp, sp, -4
 stw r4, 0(sp)
-#lower 4 bit
-mov r4, r2
-andi r4, r4, 0xF
-call WriteHex
 #higher 4 bit
 mov r4, r2
 srli r4, r4, 4
+call WriteHex
+#lower 4 bit
+mov r4, r2
+andi r4, r4, 0xF
 call WriteHex
 ldw r4, 0(sp)
 addi sp, sp, 4
@@ -130,9 +130,10 @@ WriteHex:
 		addi r4, r4, 48
 	
 	print:
-		call WriteTerminal
+		call WriteUART
 	
 	ldw r16, 0(sp)
 	ldw ra, 4(sp)
 	addi sp, sp, 8
 	ret
+
