@@ -13,3 +13,9 @@ base+4: 10: error
         8: interrupt pending
         0: interrupt enable
 IRQ: 7
+
+Look-up Table for PS2 Keyboard:
+f - 0x2B
+p - 0x4D
+<- - 0xE06B
+-> - 0xE074
