@@ -9,7 +9,7 @@ stw r16, 0(sp)
 #keyboard interrupt, read the key stroke by press-release pattern
 #read from ipending
 rdctl et, ipending
-andi et, 0x80
+andi et, et, 0x80
 beq et, r0, exit
 
 #something from keyboard, check if on release
@@ -99,8 +99,9 @@ addi sp, sp, -4
 stw r16, 0(sp)
 
 movia r16, UART
-stwio r4, r16
+stwio r4, 0(r16)
 
 ldw r16, 0(sp)
 addi sp, sp, 4
 ret
+
