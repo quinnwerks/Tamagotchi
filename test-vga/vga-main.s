@@ -20,6 +20,11 @@ _start:
  .equ green, 0x07E0
  .equ white, 0xFFFF
  .equ yellow, 0xFFE0
+ .align 3
+ VGA_STATE:
+ .word 2
+ VGA_STATE_OLD:
+ .word -1
 .section .text
 .global _start
 _start:
@@ -28,7 +33,6 @@ _start:
 
 
 # Fill back buffer1 memory locations with the colour red
-
  movia r2, red
  movia r3, VGA_Back_Buffer1
  movia r4, VGA_End_Back1
@@ -51,6 +55,15 @@ _start:
   addi r3,r3,2
   ble r3,r4, count2
 
+  movia r2, yellow
+  movia r3, VGA_Back_Buffer3
+  movia r4, VGA_End_Back3
+
+ count3:
+  sth r2, 0(r3)
+  addi r3,r3,2
+  ble r3,r4, count3
+
 # load pointer for Back Buffer1
 
   movia r5, ADDR_Front_Buffer
@@ -71,20 +84,47 @@ _start:
   movia r3, VGA_Back_Buffer2
   stwio r3, 4(r5) 	# set start location of Back Buffer2
 
-# check slider switch
+# check vga state
 
   movia r2,  ADDR_Slider_Switches
   mov r4, r0
 
  check:
-  ldwio r3, 0(r2)
-  andi r3,r3, 1
-  beq  r3, r4, check
-  mov r4, r3    # save switch setting
+  # ldwio r3, 0(r2)
+  # andi r3,r3, 1
+  # beq  r3, r4, check
+  # mov r4, r3    # save switch setting
+ movia r2, VGA_STATE_OLD
+ ldw r8, (r2)
+ movia r2, VGA_STATE
+ ldw r3, 0(r2)
+ beq r8, r3, check
 
+
+ beq r0, r3, isRed
+ addi r3, r3, -1
+ beq r0, r3, isBlue
+ addi r3, r3, -1
+ beq r0, r3, isYellow
+ br isRed
 # swap back buffers
+isYellow:
+ movia r3, VGA_Back_Buffer3
+ movi r8, 2
+ br swap
+isBlue:
+ movia r3, VGA_Back_Buffer2
+ movi r8,1
+ br swap
+isRed:
+ movi r8 ,0
+ movia r3, VGA_Back_Buffer1
 
- stwio r6, 0(r5)
+swap:
+ movia r2, VGA_STATE_OLD
+ stw r8, (r2)
+ stwio r3, 0(r5)
+
 
 # wait for status bit to go low. This indicates that the pointer is properly set
 
@@ -92,6 +132,8 @@ _start:
   ldwio r3, 12(r5)  # load status bit
   andi r3, r3, 1
   beq r3,r6, swapcheck2
+
+
 
  br check
 
