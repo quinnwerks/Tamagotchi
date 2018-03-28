@@ -52,6 +52,8 @@ WRITE_SCREEN:
 movia r16, ADDR_VGA
 addi r19, r17, 0x3FFF
 
+# iterate through each pixel (16 bits each = 2 bytes = 1 half word)
+
 WRITE_LOOP:
 beq r19, r17, RETURN
 
