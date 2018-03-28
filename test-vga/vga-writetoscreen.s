@@ -2,11 +2,12 @@
 .section .text
 .global writeToScreen
 getToScreen:
-addi sp, sp, 16
+addi sp, sp, -20
 stw ra,   0(sp)
 stw r16,  4(sp)
 stw r17,  8(sp)
 stw r18,  12(sp)
+stw r19,  16(sp)
 
 movia r16, VGA_STATE
 
@@ -31,31 +32,46 @@ br NORM_0
 
 NORM_0:
 movia r17,
-br DONE
+br WRITE_SCREEN
 NORM_1:
 movia r17,
-br DONE
+br WRITE_SCREEN
 FEED_2:
 movia r17,
-br DONE
+br WRITE_SCREEN
 PET_3:
 movia r17,
-br DONE
+br WRITE_SCREEN
 PET_4:
 movia r17,
-br DONE
+br WRITE_SCREEN
 
 # Now the address is found load the image, pixel by pixel onto the screen
-DONE:
+WRITE_SCREEN:
+
+movia r16, ADDR_VGA
+addi r19, r17, 0x3FFF
+
+WRITE_LOOP:
+beq r19, r17, RETURN
+
+ldh r18, (r17)
+sthio r18, (r4)
+addi r17, r17, 2
+addi r16, r16, 2
+
+br WRITE_LOOP
 
 
 
 
+RETURN:
 # return and restore stack
 ldw ra,   0(sp)
 ldw r16,  4(sp)
 ldw r17,  8(sp)
 ldw r18,  12(sp)
-addi sp, sp, 16
+ldw r19,  16(sp)
+addi sp, sp, 20
 
 ret
