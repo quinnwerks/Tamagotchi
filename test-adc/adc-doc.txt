@@ -1,0 +1,16 @@
+ADC documentation:
+
+Test Program: to read from ADC every 1 second and print the force sensor value
+
+Address: 0xFF204000
+Offset  0:  channel 0 (read)
+            update (write)
+        4:  channel 1 (read)
+            auto-update (write)
+
+Update: write 1 to trigger an update in all channels
+Auto-Update: write 1 to trigger auto update. ADC will update upon each update
+completion.
+
+Observed:
+FSR ranges from 077 to FFF
