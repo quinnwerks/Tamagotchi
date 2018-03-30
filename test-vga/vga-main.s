@@ -46,22 +46,7 @@ ldwio r15, (r14)
 andi r15, r15, 1
 beq r0, r15, pollVGA
 
-# timer has now ended determine next state
-# load VGA STATE
-
-
-# STATE table
-
-
-
-
-# timer has ended determine next statte
-# if current state is 1
-# set to 2
-# if current state is 2
-# set to 1
-# else interrupt has taken care of memory
-# store state in memory
+call choosenext
 
 
 
