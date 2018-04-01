@@ -5,8 +5,11 @@
 .equ SECOND, 50000000
 
 .align 2
-IMAGE:
+IMAGE0:
 .incbin "frame0.bin"
+
+IMAGE1:
+.incbin "test.bin"
 
 .align 2
 VGA_STATE:
@@ -16,9 +19,10 @@ VGA_STATE:
 .section .text
 .global _start
 _start:
-# initalize devices
-# initalize timer 2
-# r14 is reserved for VGATIMER
+.section .text
+.global _start
+_start:
+movia sp, 0x03FFFFFC
 movia r14, VGATIMER
 stwio r0, 0(r14)
 movui r10, %lo(SECOND)
@@ -26,17 +30,13 @@ stwio r10,  8(r14)
 movui r10, %hi(SECOND)
 stwio r10, 12(r14)
 
+
 # set initial vga state to zero
 movia r9, VGA_STATE
 movi  r8, 0
 stw r8, 0(r9)
 
-
-
-
-
-
-
+loop:
 # load the image
 call getToScreen
 # start the timer
@@ -52,5 +52,5 @@ beq r0, r15, pollVGA
 
 call choosenext
 
-
-br
+stwio r0, 0(r14)
+br loop
