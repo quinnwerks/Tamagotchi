@@ -9,7 +9,7 @@ stw r16, 0(sp)
 #keyboard interrupt, read the key stroke by press-release pattern
 #read from ipending
 rdctl et, ipending
-andi et, 0x80
+andi et, et, 0x80
 beq et, r0, exit
 
 #something from keyboard, check if on release
@@ -26,8 +26,14 @@ beq r2, et, dealloc
 call readPS2
 addi sp, sp, -4
 stw r4, 0(sp)
+#higher 4 bit
 mov r4, r2
-call WriteUART
+srli r4, r4, 4
+call WriteHex
+#lower 4 bit
+mov r4, r2
+andi r4, r4, 0xF
+call WriteHex
 ldw r4, 0(sp)
 addi sp, sp, 4
 
@@ -99,8 +105,35 @@ addi sp, sp, -4
 stw r16, 0(sp)
 
 movia r16, UART
-stwio r4, r16
+stwio r4, 0(r16)
 
 ldw r16, 0(sp)
 addi sp, sp, 4
 ret
+
+#void WriteHex(int)
+.global WriteHex
+WriteHex:
+	addi sp, sp, -8
+	stw r16, 0(sp)
+	stw ra, 4(sp)
+
+	#convert this number to ascii
+	movi r16, 0xA
+	blt r4, r16, LESS_THAN_A
+
+	MORE_THAN_A:
+		addi r4, r4, 55
+		br print
+
+	LESS_THAN_A:
+		addi r4, r4, 48
+	
+	print:
+		call WriteUART
+	
+	ldw r16, 0(sp)
+	ldw ra, 4(sp)
+	addi sp, sp, 8
+	ret
+
