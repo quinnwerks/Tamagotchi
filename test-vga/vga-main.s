@@ -9,7 +9,7 @@ IMAGE0:
 .incbin "frame0.bin"
 
 IMAGE1:
-.incbin "test.bin"
+.incbin "frame1.bin"
 
 .align 2
 VGA_STATE:

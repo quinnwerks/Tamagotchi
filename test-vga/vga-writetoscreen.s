@@ -32,6 +32,7 @@ movia r18, 0x25800
 add r19, r17, r18
 
 # clear VGA
+/*
 CLEAR_LOOP:
 sthio r0, (r16)
 addi r16, r16, 2
@@ -49,7 +50,7 @@ srli r19, r16, 10
 andi r19, r19 , 0xFF
 movi r20, 240
 blt r19, r20 , CLEAR_LOOP
-
+*/
 
 
 STARTWRTIE:
