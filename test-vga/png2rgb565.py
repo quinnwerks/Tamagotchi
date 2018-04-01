@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-
+# this is not our code. This piece of code was used to generate the binary image files
+# the code and its creator can be found here: https://gist.github.com/gnrr/7065820
 from PIL import Image
 import struct, os, sys
 
