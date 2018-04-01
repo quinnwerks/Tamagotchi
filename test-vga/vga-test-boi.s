@@ -24,11 +24,6 @@ _start:
   movui r10, %hi(SECOND)
   stwio r10, 12(r14)
 
-
-
-
-
-
 loadNewState:
   movia r10, VGA_STATE
   movia r12, VGA_STATE_OLD

@@ -1,13 +1,17 @@
-# address's used
+# global variables and address's used
 .section .data
 .equ ADDR_VGA, 0x08000000
 .equ VGATIMER, 0xff202020
 .equ SECOND, 50000000
-# global variables
-.section .data
+
+.align 2
+IMAGE:
+.incbin "frame0.bin"
+
 .align 2
 VGA_STATE:
-.word 3
+ .word 0
+
 
 .section .text
 .global _start
@@ -49,15 +53,4 @@ beq r0, r15, pollVGA
 call choosenext
 
 
-
-
-.section .exceptions, "ax"
-myISR:
-# store stuff in stack
-# determine which interrput occured
-
-
-# set timer count to zero to end animation\
-
-addi ea, ea, -4
-eret
+br
