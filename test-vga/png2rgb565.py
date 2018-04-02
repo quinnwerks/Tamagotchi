@@ -28,7 +28,7 @@ def write_bin(f, pixel_list):
 if __name__ == '__main__':
     args = sys.argv
     # if len(args) != 2: usage()
-    in_path = "frame1.png"
+    in_path = "frame3.png"
     if os.path.exists(in_path) == False: error('not exists: ' + in_path)
 
     body, _ = os.path.splitext(in_path)

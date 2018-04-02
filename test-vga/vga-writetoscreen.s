@@ -8,7 +8,13 @@ IMAGE0:
 .incbin "frame0.bin"
 
 IMAGE1:
-.incbin "test.bin"
+.incbin "frame1.bin"
+
+IMAGE2:
+.incbin "frame2.bin"
+
+IMAGE3:
+.incbin "frame3.bin"
 
 .align 2
 VGA_STATE:
@@ -66,10 +72,10 @@ addi r17, r17, -1
 beq r17, r0, NORM_1
 addi r17, r17, -1
 
-beq r17, r0, FEED_2
+beq r17, r0, LOW_2
 addi r17, r17, -1
 
-beq r17, r0, PET_3
+beq r17, r0, LOW_3
 addi r17, r17, -1
 
 beq r17, r0, PET_4
@@ -81,11 +87,11 @@ br WRITE_SCREEN
 NORM_1:
 movia r17, IMAGE1
 br WRITE_SCREEN
-FEED_2:
-movia r17, IMAGE0
+LOW_2:
+movia r17, IMAGE2
 br WRITE_SCREEN
-PET_3:
-movia r17, IMAGE0
+LOW_3:
+movia r17, IMAGE3
 br WRITE_SCREEN
 PET_4:
 movia r17, IMAGE0
