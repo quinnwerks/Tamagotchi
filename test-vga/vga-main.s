@@ -11,6 +11,12 @@ IMAGE0:
 IMAGE1:
 .incbin "frame1.bin"
 
+IMAGE2:
+.incbin "frame2.bin"
+
+IMAGE3:
+.incbin "frame3.bin"
+
 .align 2
 VGA_STATE:
  .word 0
