@@ -1,14 +1,62 @@
+.equ ADDR_VGA, 0x08000000
+.equ VGATIMER, 0xff202020
+.equ HPTIMER, 0xff202000
+.equ SECOND, 50000000
+.equ FIVE, 500000000
+.equ PS2, 0xFF200100
+
 .section .exceptions, "ax"
 ISR:
 	addi sp, sp, -8
 	stw r16, 0(sp)
 	stw r17, 4(sp)
 	rdctl et, ipending
+	andi et, et, 0x80
+	bne et, r0, PS2Input
+	rdctl et, ipending
 	andi et, et, 0b1
 	bne et, r0, LoseHP
 	br exit
 
+PS2Input:
+	br exit
+/*
+	#exit if not break code 0xF0
+	call readPS2
+	movi et, 0xF0
+	beq r2, et, BREAK
+	movia r17, PS2_BREAK
+	ldw r16, (r17)
+	movi r17, 1
+	bne r16, r17, dealloc
+	movi r16, 0x2B
+	beq r2, r16, feed
+	br dealloc
+
+	#write 1 into break if 0xf0
+	BREAK:
+		movia r17, PS2_BREAK
+		movi r16, 1
+		stw r16, 0(r17)
+		br dealloc
+	
+	feed:
+		movia r17, VGA_STATE
+		movi r16, 5
+		stw r16, 0(r17)
+		movia r17, PS2_BREAK
+		stw r0, 0(r17)
+
+	dealloc:
+    	ldw r2, 0(sp)
+    	ldw ra, 4(sp)
+    	addi sp, sp, 8
+		br exit	*/
+
 LoseHP:
+	movia r17, VGATIMER
+	movi r16, 0b1000
+	stw r16, 0(r17)
 	movia r17, PET_HP
 	ldw r16, 0(r17)
 	subi r16, r16, 10
@@ -17,6 +65,10 @@ LoseHP:
 	#reset timer
 	movia r17, HPTIMER
 	stwio r0, 0(r17)
+	movia r17, VGATIMER
+	movi r16, 0b100
+	stw r16, 0(r17)
+	br exit
 
 exit:
 	ldw r16, 0(sp)
@@ -27,12 +79,6 @@ exit:
 
 # global variables and address's used
 .section .data
-.equ ADDR_VGA, 0x08000000
-.equ VGATIMER, 0xff202020
-.equ HPTIMER, 0xff202000
-.equ SECOND, 50000000
-.equ FIVE, 500000000
-
 .align 2
 IMAGE0:
 .incbin "frame0.bin"
@@ -46,17 +92,47 @@ IMAGE2:
 IMAGE3:
 .incbin "frame3.bin"
 
+FEED0:
+.incbin "feed0.bin"
+
+FEED1:
+.incbin "feed1.bin"
+
+FEED2:
+.incbin "feed2.bin"
+
+FEED3:
+.incbin "feed3.bin"
+
+FEED4:
+.incbin "feed4.bin"
+
+FEED5:
+.incbin "feed5.bin"
+
+FEED6:
+.incbin "feed6.bin"
+
+
 .align 2
 VGA_STATE:
  .word 0
 PET_HP:
-.word 50
+.word 100
+
+PS2_BREAK:
+.word 0
 
 .section .text
 .global _start
 _start:
 # stack
 movia sp, 0x03FFFFFC
+
+#initialize keyboard
+movia r8, PS2
+movi r9, 1
+stwio r9, (r8)
 
 #VGA Timer 2
 movia r14, VGATIMER
@@ -76,22 +152,45 @@ stwio r10, 12(r8)
 movi r10, 0b111
 stwio r10, 4(r8)
 
-#set timer 1 interrupt
-movi r10, 0b1
+#set timer 1 and keyboard interrupt
+#movi r10, 0x81
+movi r10, 1
 wrctl ienable, r10
+movi r10, 0b1
 wrctl status, r10
 
 # set initial vga state to zero
 movia r9, VGA_STATE
-movi  r8, 0
+movi  r8, 5
 stw r8, 0(r9)
 
 loop:
+
+movia r9, VGA_STATE
+ldw r8, 0(r9)
+movi r9, 5
+bge r8, r9, ISR_DIS
+
+ISR_EN:
+	movi r9, 1
+	wrctl status, r9
+	movia r8, HPTIMER
+	movi r10, 0b111
+	stwio r10, 4(r8)
+	br next
+
+ISR_DIS:
+	movia r8, HPTIMER
+	movi r10, 0b1000
+	stwio r10, 4(r8)
+	wrctl status, r0
+
+next:
 # load the image
 call getToScreen
 # start the timer
 ldwio r15, 4(r14)
-ori r15, r10, 0x4
+movi r15, 0b110
 stwio r15, 4(r14)
 
 # poll the vga timer (creates a SECOND delay)
@@ -146,7 +245,10 @@ movi r18, 2
 beq r17, r18, SET_LOW_THREE
 br SET_LOW_TWO
 CHECK_SPECIAL:
-br SET_TO_ONE
+# states 5, 6, 7, 8, 9, 10, 11 are feed states
+movi r18, 11
+ble r17, r18, SET_FEED
+br SET_TO_ZERO
 
 # #####################################################
 SET_TO_ONE:
@@ -167,9 +269,19 @@ stw r18, 0(r16)
 br DONE
 # #######################################################
 SET_FEED:
+# load VGA state again
+ldw r17, 0(r16)
+movi r18, 11
+# if state is less than 10 increment
+blt r17, r18, INC_FEED
+br SET_TO_ZERO
+INC_FEED:
+addi r17, r17, 1
+stw r17, 0(r16)
 br DONE
 # #######################################################
 DONE:
+
 
 # DEATH CHECK?
 ldw sp,  0(sp)
@@ -238,7 +350,30 @@ addi r17, r17, -1
 beq r17, r0, LOW_3
 addi r17, r17, -1
 
-beq r17, r0, PET_4
+beq r17, r0, DEATH_4
+addi r17, r17, -1
+
+beq r17, r0, FEED_5
+addi r17, r17, -1
+
+beq r17, r0, FEED_6
+addi r17, r17, -1
+
+beq r17, r0, FEED_7
+addi r17, r17, -1
+
+beq r17, r0, FEED_8
+addi r17, r17, -1
+
+beq r17, r0, FEED_9
+addi r17, r17, -1
+
+beq r17, r0, FEED_10
+addi r17, r17, -1
+
+beq r17, r0, FEED_11
+
+
 br NORM_0
 
 NORM_0:
@@ -253,8 +388,29 @@ br WRITE_SCREEN
 LOW_3:
 movia r17, IMAGE3
 br WRITE_SCREEN
-PET_4:
+DEATH_4:
 movia r17, IMAGE0
+br WRITE_SCREEN
+FEED_5:
+movia r17, FEED0
+br WRITE_SCREEN
+FEED_6:
+movia r17, FEED1
+br WRITE_SCREEN
+FEED_7:
+movia r17, FEED2
+br WRITE_SCREEN
+FEED_8:
+movia r17, FEED3
+br WRITE_SCREEN
+FEED_9:
+movia r17, FEED4
+br WRITE_SCREEN
+FEED_10:
+movia r17, FEED5
+br WRITE_SCREEN
+FEED_11:
+movia r17, FEED6
 br WRITE_SCREEN
 
 # Now the address is found load the image, pixel by pixel onto the screen
