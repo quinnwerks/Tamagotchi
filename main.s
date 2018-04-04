@@ -352,11 +352,6 @@ br WRITE_SCREEN
 
 STARTWRTIE:
 movia r16, VGA_STATE
-
-
-
-
-
 # r17 is now vga_state
 ldw r17, (r16)
 
