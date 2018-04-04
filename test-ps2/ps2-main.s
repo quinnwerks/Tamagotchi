@@ -1,10 +1,15 @@
 .equ UART, 0xFF201000
 .equ PS2, 0xFF200100
 
+.section .data
+.align 2
+Break: .word 0
+
 .section .exceptions, "ax"
 ISR:
-addi sp, sp, -4
+addi sp, sp, -8
 stw r16, 0(sp)
+stw r17, 4(sp)
 
 #keyboard interrupt, read the key stroke by press-release pattern
 #read from ipending
@@ -20,22 +25,53 @@ stw ra, 4(sp)
 #exit if not break code 0xF0
 call readPS2
 movi et, 0xF0
-beq r2, et, dealloc
+beq r2, et, BREAK
+movia r17, Break
+ldw r16, (r17)
+movi r17, 1
+beq r16, r17, print_ps2
+br dealloc
 
-#else read second bit and write to terminal
-call readPS2
-addi sp, sp, -4
-stw r4, 0(sp)
-#higher 4 bit
-mov r4, r2
-srli r4, r4, 4
-call WriteHex
-#lower 4 bit
-mov r4, r2
-andi r4, r4, 0xF
-call WriteHex
-ldw r4, 0(sp)
-addi sp, sp, 4
+#write 1 into break if 0xf0
+BREAK:
+	movia r17, Break
+	movi r16, 1
+	stw r16, 0(r17)
+	br dealloc
+
+print_ps2:
+	#else read second bit and write to terminal
+	addi sp, sp, -4
+	stw r4, 0(sp)
+
+	#clear terminal
+	movi r4, 0x1b
+	call WriteUART
+	movi r4, 0x5b
+	call WriteUART
+	movi r4, 0x32
+	call WriteUART
+	movi r4, 0x4b 
+	call WriteUART
+	movi r4, 0x1b
+	call WriteUART
+	movi r4, 0x5b
+	call WriteUART
+	movi r4, 0x48
+	call WriteUART 
+	
+	#higher 4 bit
+	mov r4, r2
+	srli r4, r4, 4
+	call WriteHex
+	#lower 4 bit
+	mov r4, r2
+	andi r4, r4, 0xF
+	call WriteHex
+	ldw r4, 0(sp)
+	addi sp, sp, 4
+	movia r17, Break
+	stw r0, 0(r17)
 
 dealloc:
     ldw r2, 0(sp)
@@ -44,7 +80,8 @@ dealloc:
 
 exit:
     ldw r16, 0(sp)
-    addi sp, sp, 4
+	ldw r17, 4(sp)
+    addi sp, sp, 8
     addi ea, ea, -4
     eret
 
