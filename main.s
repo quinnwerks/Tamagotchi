@@ -19,8 +19,9 @@ ISR:
 	br exit
 
 PS2Input:
-	br exit
-/*
+	addi sp, sp, -8
+	stw r2, 0(sp)
+	stw ra, 4(sp)
 	#exit if not break code 0xF0
 	call readPS2
 	movi et, 0xF0
@@ -41,17 +42,25 @@ PS2Input:
 		br dealloc
 
 	feed:
+		#change vga state to 5
 		movia r17, VGA_STATE
 		movi r16, 5
 		stw r16, 0(r17)
+		#restore 20 hp
+		movia r17, PET_HP
+		ldw r16, (r17)
+		addi r16, r16, 20
+		stw r16, (r17)
+		#reset breaking status to 0
 		movia r17, PS2_BREAK
 		stw r0, 0(r17)
+		br dealloc
 
 	dealloc:
     	ldw r2, 0(sp)
     	ldw ra, 4(sp)
     	addi sp, sp, 8
-		br exit	*/
+		br exit	
 
 LoseHP:
 	movia r17, VGATIMER
@@ -74,7 +83,7 @@ exit:
 	ldw r16, 0(sp)
 	ldw r17, 4(sp)
 	addi sp, sp, 8
-	addi ea, ea, 4
+	addi ea, ea, -4
 	eret
 
 # global variables and address's used
@@ -154,10 +163,15 @@ _start:
 # stack
 movia sp, 0x03FFFFFC
 
+#init HP
+movia r8, PET_HP
+movi r9, 40
+stw r9, (r8)
+
 #initialize keyboard
 movia r8, PS2
 movi r9, 1
-stwio r9, (r8)
+stwio r9, 4(r8)
 
 #VGA Timer 2
 movia r14, VGATIMER
@@ -179,14 +193,14 @@ stwio r10, 4(r8)
 
 #set timer 1 and keyboard interrupt
 #movi r10, 0x81
-movi r10, 1
+movi r10, 0x81
 wrctl ienable, r10
 movi r10, 0b1
 wrctl status, r10
 
 # set initial vga state to zero
 movia r9, VGA_STATE
-movi  r8, 5
+movi  r8, 0
 stw r8, 0(r9)
 
 loop:
