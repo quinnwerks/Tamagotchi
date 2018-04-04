@@ -39,7 +39,7 @@ PS2Input:
 		movi r16, 1
 		stw r16, 0(r17)
 		br dealloc
-	
+
 	feed:
 		movia r17, VGA_STATE
 		movi r16, 5
@@ -113,7 +113,32 @@ FEED5:
 FEED6:
 .incbin "feed6.bin"
 
+PET0:
+.incbin "pet0.bin"
 
+PET1:
+.incbin "pet1.bin"
+
+PET2:
+.incbin "pet2.bin"
+
+PET3:
+.incbin "pet3.bin"
+
+PET4:
+.incbin "pet4.bin"
+
+PET5:
+.incbin "pet5.bin"
+
+PET6:
+.incbin "pet6.bin"
+
+PET7:
+.incbin "pet7.bin"
+
+PET8:
+.incbin "pet8.bin"
 .align 2
 VGA_STATE:
  .word 0
@@ -304,38 +329,24 @@ stw r18,  12(sp)
 stw r19,  16(sp)
 stw r20,  20(sp)
 
-mov r17, r0
-movia r16, ADDR_VGA
-movia r18, 0x25800
-add r19, r17, r18
+mov r18, r4
+beq r0, r4, STARTWRTIE
+movia r17, PRE_PET_0
+br WRITE_SCREEN
 
-# clear VGA
-/*
-CLEAR_LOOP:
-sthio r0, (r16)
-addi r16, r16, 2
-addi r17, r17, 2
-srli r19, r16, 1
-andi r19, r19, 0x1FF
-
-movi r20, 320
-blt r19, r20, CLEAR_LOOP
-slli r19, r19, 1
-sub r16, r16, r19
-addi r16, r16, 0x400
-
-srli r19, r16, 10
-andi r19, r19 , 0xFF
-movi r20, 240
-blt r19, r20 , CLEAR_LOOP
-*/
 
 
 STARTWRTIE:
 movia r16, VGA_STATE
 
+
+
+
+
 # r17 is now vga_state
 ldw r17, (r16)
+
+
 
 # state stable, to load to memory
 beq r17, r0, NORM_0
@@ -372,8 +383,37 @@ beq r17, r0, FEED_10
 addi r17, r17, -1
 
 beq r17, r0, FEED_11
+addi r17, r17, -1
 
+beq r17, r0, PET_12
+addi r17, r17, -1
 
+beq r17, r0, PET_13
+addi r17, r17, -1
+
+beq r17, r0, PET_14
+addi r17, r17, -1
+
+beq r17, r0, PET_15
+addi r17, r17, -1
+
+beq r17, r0, PET_16
+addi r17, r17, -1
+
+beq r17, r0, PET_17
+addi r17, r17, -1
+
+beq r17, r0, PET_18
+addi r17, r17, -1
+
+beq r17, r0, PET_19
+addi r17, r17, -1
+
+beq r17, r0, PET_20
+addi r17, r17, -1
+
+beq r17, r0, PET_21
+addi r17, r17, -1
 br NORM_0
 
 NORM_0:
@@ -412,9 +452,45 @@ br WRITE_SCREEN
 FEED_11:
 movia r17, FEED6
 br WRITE_SCREEN
+PET_12:
+movia r17, PET0
+br WRITE_SCREEN
+PET_13:
+movia r17, PET1
+br WRITE_SCREEN
+PET_14:
+movia r17, PET2
+br WRITE_SCREEN
+PET_15:
+movia r17, PET3
+br WRITE_SCREEN
+PET_16:
+movia r17, PET4
+br WRITE_SCREEN
+PET_17:
+movia r17, PET5
+br WRITE_SCREEN
+PET_18:
+movia r17, PET6
+br WRITE_SCREEN
+PET_19:
+movia r17, PET7
+br WRITE_SCREEN
+# if hurt go to 21 else go to 20
+PET_20:
+movia r17, PET9
+br WRITE_SCREEN
+PET_21:
+movia r17, PET8
+br WRITE_SCREEN
+
 
 # Now the address is found load the image, pixel by pixel onto the screen
 WRITE_SCREEN:
+mov r17, r0
+movia r16, ADDR_VGA
+movia r18, 0x25800
+add r19, r17, r18
 
 
 movia r16, ADDR_VGA
