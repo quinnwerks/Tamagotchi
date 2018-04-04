@@ -3,7 +3,9 @@
 .equ HPTIMER, 0xff202000
 .equ SECOND, 50000000
 .equ FIVE, 500000000
+.equ POINTFIVE, 25000000
 .equ PS2, 0xFF200100
+.equ ADC, 0xFF204000
 
 .section .exceptions, "ax"
 ISR:
@@ -31,7 +33,10 @@ PS2Input:
 	movi r17, 1
 	bne r16, r17, dealloc
 	movi r16, 0x2B
+	#check feed
 	beq r2, r16, feed
+	movi r16, 0x4D
+	beq r2, r16, pet
 	br dealloc
 
 	#write 1 into break if 0xf0
@@ -40,8 +45,11 @@ PS2Input:
 		movi r16, 1
 		stw r16, 0(r17)
 		br dealloc
-
+	
 	feed:
+		movia r17, VGATIMER
+		movi r16, 0b1000
+		stw r16, 0(r17)
 		#change vga state to 5
 		movia r17, VGA_STATE
 		movi r16, 5
@@ -54,6 +62,86 @@ PS2Input:
 		#reset breaking status to 0
 		movia r17, PS2_BREAK
 		stw r0, 0(r17)
+		movia r17, VGATIMER
+		movi r16, 0b100
+		stw r16, 0(r17)
+		br dealloc
+
+	pet:
+		addi sp, sp, -4
+		stw r4, 0(sp)
+
+		#draw new frame and wait
+		movi r4, 1
+		call getToScreen
+
+		INIT_TIMER:
+		#poll adc after 0.5s
+		#set up polling timer for 0.1s period
+		movia r17, VGATIMER
+		movui r16, %lo(POINTFIVE)
+		stwio r16, 8(r17)
+		movui r16, %hi(POINTFIVE)
+		stwio r16, 12(r17)
+		stwio r0, 0(r17)
+		movi r16, 0b100
+		stwio r16, 4(r17)
+
+		#poll1
+		poll1:
+			ldwio r16, 0(r17)
+			andi r16, r16, 1
+			beq r16, r0, poll1
+			
+		#read adc value from channel 0
+		movia r17, ADC
+		movi r16, 1
+		stwio r16, 0(r17)
+		ldwio r16, 0(r17) 
+		
+		#if less than 0x100, poll again
+		movi r17, 0x100
+		blt r16, r17, INIT_TIMER
+
+		#if force too much, set HURT to 1
+		movi r17, 0x83B
+		blt r16, r17, petting
+		movia r17, HURT
+		movi r16, 1
+		stw r16, (r17)
+		#and subtract HP by 20
+		movia r17, PET_HP
+		ldw r16, (r17)
+		subi r16, r16, 20
+		stw r16, (r17) 
+		br pet_ready		
+
+		petting:
+			movia r17, HURT
+			stw r0, 0(r17)
+			#increase HP by 10
+			movia r17, PET_HP
+			ldw r16, (r17)
+			addi r16, r16, 10
+			stw r16, (r17)			
+
+		pet_ready:		
+			movia r17, VGA_STATE
+			movi r16, 12
+			stw r16, (r17)
+
+		#reset VGA timer
+		movia r17, VGATIMER
+		movui r16, %lo(SECOND)
+		stwio r16, 8(r17)
+		movui r16, %hi(SECOND)
+		stwio r16, 12(r17)
+		stwio r0, 0(r17)
+		movi r16, 0b100
+		stwio r16, 4(r17)
+
+		ldw r4, 0(sp)
+		addi sp, sp, 4
 		br dealloc
 
 	dealloc:
@@ -122,6 +210,7 @@ FEED5:
 FEED6:
 .incbin "feed6.bin"
 
+
 PET0:
 .incbin "pet0.bin"
 
@@ -148,6 +237,14 @@ PET7:
 
 PET8:
 .incbin "pet8.bin"
+
+PET9:
+.incbin "pet9.bin"
+
+PREPET0:
+.incbin "prepet0.bin"
+
+
 .align 2
 VGA_STATE:
  .word 0
@@ -155,6 +252,9 @@ PET_HP:
 .word 100
 
 PS2_BREAK:
+.word 0
+
+HURT:
 .word 0
 
 .section .text
@@ -167,6 +267,10 @@ movia sp, 0x03FFFFFC
 movia r8, PET_HP
 movi r9, 40
 stw r9, (r8)
+
+#init hurt
+movia r8, HURT
+stw r0, 0(r8)
 
 #initialize keyboard
 movia r8, PS2
@@ -343,19 +447,38 @@ stw r18,  12(sp)
 stw r19,  16(sp)
 stw r20,  20(sp)
 
-mov r18, r4
-beq r0, r4, STARTWRTIE
-movia r17, PRE_PET_0
-br WRITE_SCREEN
+mov r17, r0
+movia r16, ADDR_VGA
+movia r18, 0x25800
+add r19, r17, r18
 
+# clear VGA
+/*
+CLEAR_LOOP:
+sthio r0, (r16)
+addi r16, r16, 2
+addi r17, r17, 2
+srli r19, r16, 1
+andi r19, r19, 0x1FF
+
+movi r20, 320
+blt r19, r20, CLEAR_LOOP
+slli r19, r19, 1
+sub r16, r16, r19
+addi r16, r16, 0x400
+
+srli r19, r16, 10
+andi r19, r19 , 0xFF
+movi r20, 240
+blt r19, r20 , CLEAR_LOOP
+*/
 
 
 STARTWRTIE:
 movia r16, VGA_STATE
+
 # r17 is now vga_state
 ldw r17, (r16)
-
-
 
 # state stable, to load to memory
 beq r17, r0, NORM_0
@@ -392,37 +515,8 @@ beq r17, r0, FEED_10
 addi r17, r17, -1
 
 beq r17, r0, FEED_11
-addi r17, r17, -1
 
-beq r17, r0, PET_12
-addi r17, r17, -1
 
-beq r17, r0, PET_13
-addi r17, r17, -1
-
-beq r17, r0, PET_14
-addi r17, r17, -1
-
-beq r17, r0, PET_15
-addi r17, r17, -1
-
-beq r17, r0, PET_16
-addi r17, r17, -1
-
-beq r17, r0, PET_17
-addi r17, r17, -1
-
-beq r17, r0, PET_18
-addi r17, r17, -1
-
-beq r17, r0, PET_19
-addi r17, r17, -1
-
-beq r17, r0, PET_20
-addi r17, r17, -1
-
-beq r17, r0, PET_21
-addi r17, r17, -1
 br NORM_0
 
 NORM_0:
@@ -461,45 +555,9 @@ br WRITE_SCREEN
 FEED_11:
 movia r17, FEED6
 br WRITE_SCREEN
-PET_12:
-movia r17, PET0
-br WRITE_SCREEN
-PET_13:
-movia r17, PET1
-br WRITE_SCREEN
-PET_14:
-movia r17, PET2
-br WRITE_SCREEN
-PET_15:
-movia r17, PET3
-br WRITE_SCREEN
-PET_16:
-movia r17, PET4
-br WRITE_SCREEN
-PET_17:
-movia r17, PET5
-br WRITE_SCREEN
-PET_18:
-movia r17, PET6
-br WRITE_SCREEN
-PET_19:
-movia r17, PET7
-br WRITE_SCREEN
-# if hurt go to 21 else go to 20
-PET_20:
-movia r17, PET9
-br WRITE_SCREEN
-PET_21:
-movia r17, PET8
-br WRITE_SCREEN
-
 
 # Now the address is found load the image, pixel by pixel onto the screen
 WRITE_SCREEN:
-mov r17, r0
-movia r16, ADDR_VGA
-movia r18, 0x25800
-add r19, r17, r18
 
 
 movia r16, ADDR_VGA
