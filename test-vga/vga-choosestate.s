@@ -1,3 +1,4 @@
+
 .global choosenext
 choosenext:
 # state table cheat sheet
@@ -39,7 +40,11 @@ movi r18, 2
 beq r17, r18, SET_LOW_THREE
 br SET_LOW_TWO
 CHECK_SPECIAL:
-br SET_TO_ONE
+# states 5, 6, 7, 8, 9, 10, 11 are feed states
+movi r18, 11
+ble r17, r18, SET_FEED
+bgt r17, r18, SET_PET
+br SET_TO_ZERO
 
 # #####################################################
 SET_TO_ONE:
@@ -60,9 +65,45 @@ stw r18, 0(r16)
 br DONE
 # #######################################################
 SET_FEED:
+# load VGA state again
+ldw r17, 0(r16)
+movi r18, 11
+# if state is less than 10 increment
+blt r17, r18, INC_FEED
+br SET_TO_ZERO
+INC_FEED:
+addi r17, r17, 1
+stw r17, 0(r16)
 br DONE
 # #######################################################
+SET_PET:
+ldw r17, 0(r16)
+
+movi r18, 19
+bgt r17, r18, SET_TO_ZERO
+beq r17, r18, SET_Y_N_HURT
+# else increment
+addi r17, r17,1
+stw r17, 0 (r16)
+br DONE
+SET_Y_N_HURT:
+movia r18, HURT
+ldw r17, (r18)
+beq r17, r0, SET_TWENTY
+
+movi r18, 21
+stw r18, 0(r16)
+br DONE
+
+SET_TWENTY:
+movi r18, 20
+stw r18, 0(r16)
+
+
+br DONE
+
 DONE:
+
 
 # DEATH CHECK?
 ldw sp,  0(sp)

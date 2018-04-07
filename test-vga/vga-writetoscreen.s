@@ -1,27 +1,3 @@
-.section .data
-.equ ADDR_VGA, 0x08000000
-.equ VGATIMER, 0xff202020
-.equ SECOND, 50000000
-
-
-IMAGE0:
-.incbin "frame0.bin"
-
-IMAGE1:
-.incbin "frame1.bin"
-
-IMAGE2:
-.incbin "frame2.bin"
-
-IMAGE3:
-.incbin "frame3.bin"
-
-.align 2
-VGA_STATE:
- .word 2
-
-
-# sets image based on vga statte
 .global getToScreen
 getToScreen:
 addi sp, sp, -24
@@ -78,7 +54,60 @@ addi r17, r17, -1
 beq r17, r0, LOW_3
 addi r17, r17, -1
 
-beq r17, r0, PET_4
+beq r17, r0, DEATH_4
+addi r17, r17, -1
+
+beq r17, r0, FEED_5
+addi r17, r17, -1
+
+beq r17, r0, FEED_6
+addi r17, r17, -1
+
+beq r17, r0, FEED_7
+addi r17, r17, -1
+
+beq r17, r0, FEED_8
+addi r17, r17, -1
+
+beq r17, r0, FEED_9
+addi r17, r17, -1
+
+beq r17, r0, FEED_10
+addi r17, r17, -1
+
+beq r17, r0, FEED_11
+addi r17, r17, -1
+
+beq r17, r0, PET_12
+addi r17, r17, -1
+
+beq r17, r0, PET_13
+addi r17, r17, -1
+
+beq r17, r0, PET_14
+addi r17, r17, -1
+
+beq r17, r0, PET_15
+addi r17, r17, -1
+
+beq r17, r0, PET_16
+addi r17, r17, -1
+
+beq r17, r0, PET_17
+addi r17, r17, -1
+
+beq r17, r0, PET_18
+addi r17, r17, -1
+
+beq r17, r0, PET_19
+addi r17, r17, -1
+
+beq r17, r0, PET_20
+addi r17, r17, -1
+
+beq r17, r0, PET_21
+addi r17, r17, -1
+
 br NORM_0
 
 NORM_0:
@@ -93,8 +122,59 @@ br WRITE_SCREEN
 LOW_3:
 movia r17, IMAGE3
 br WRITE_SCREEN
-PET_4:
+DEATH_4:
 movia r17, IMAGE0
+br WRITE_SCREEN
+FEED_5:
+movia r17, FEED0
+br WRITE_SCREEN
+FEED_6:
+movia r17, FEED1
+br WRITE_SCREEN
+FEED_7:
+movia r17, FEED2
+br WRITE_SCREEN
+FEED_8:
+movia r17, FEED3
+br WRITE_SCREEN
+FEED_9:
+movia r17, FEED4
+br WRITE_SCREEN
+FEED_10:
+movia r17, FEED5
+br WRITE_SCREEN
+FEED_11:
+movia r17, FEED6
+br WRITE_SCREEN
+PET_12:
+movia r17, PET0
+br WRITE_SCREEN
+PET_13:
+movia r17, PET1
+br WRITE_SCREEN
+PET_14:
+movia r17, PET2
+br WRITE_SCREEN
+PET_15:
+movia r17, PET3
+br WRITE_SCREEN
+PET_16:
+movia r17, PET4
+br WRITE_SCREEN
+PET_17:
+movia r17, PET5
+br WRITE_SCREEN
+PET_18:
+movia r17, PET6
+br WRITE_SCREEN
+PET_19:
+movia r17, PET7
+br WRITE_SCREEN
+PET_20:
+movia r17, PET9
+br WRITE_SCREEN
+PET_21:
+movia r17, PET8
 br WRITE_SCREEN
 
 # Now the address is found load the image, pixel by pixel onto the screen
