@@ -45,7 +45,7 @@ PS2Input:
 		movi r16, 1
 		stw r16, 0(r17)
 		br dealloc
-	
+
 	feed:
 		movia r17, VGATIMER
 		movi r16, 0b1000
@@ -92,19 +92,19 @@ PS2Input:
 			ldwio r16, 0(r17)
 			andi r16, r16, 1
 			beq r16, r0, poll1
-			
+
 		#read adc value from channel 0
 		movia r17, ADC
 		movi r16, 1
 		stwio r16, 0(r17)
-		ldwio r16, 0(r17) 
-		
+		ldwio r16, 0(r17)
+
 		#if less than 0x100, poll again
 		movi r17, 0x100
 		blt r16, r17, INIT_TIMER
 
 		#if force too much, set HURT to 1
-		movi r17, 0x83B
+		movi r17, 0xB00
 		blt r16, r17, petting
 		movia r17, HURT
 		movi r16, 1
@@ -113,8 +113,8 @@ PS2Input:
 		movia r17, PET_HP
 		ldw r16, (r17)
 		subi r16, r16, 20
-		stw r16, (r17) 
-		br pet_ready		
+		stw r16, (r17)
+		br pet_ready
 
 		petting:
 			movia r17, HURT
@@ -123,9 +123,9 @@ PS2Input:
 			movia r17, PET_HP
 			ldw r16, (r17)
 			addi r16, r16, 10
-			stw r16, (r17)			
+			stw r16, (r17)
 
-		pet_ready:		
+		pet_ready:
 			movia r17, VGA_STATE
 			movi r16, 12
 			stw r16, (r17)
@@ -148,7 +148,7 @@ PS2Input:
     	ldw r2, 0(sp)
     	ldw ra, 4(sp)
     	addi sp, sp, 8
-		br exit	
+		br exit
 
 LoseHP:
 	movia r17, VGATIMER
@@ -244,6 +244,9 @@ PET9:
 PREPET0:
 .incbin "prepet0.bin"
 
+DEATH:
+.incbin "gameover.bin"
+
 
 .align 2
 VGA_STATE:
@@ -265,7 +268,7 @@ movia sp, 0x03FFFFFC
 
 #init HP
 movia r8, PET_HP
-movi r9, 40
+movi r9, 100
 stw r9, (r8)
 
 #init hurt
@@ -345,7 +348,45 @@ beq r0, r15, pollVGA
 call choosenext
 
 stwio r0, 0(r14)
+
+movia r9, VGA_STATE
+ldw r8, (r9)
+addi r8, r8, -4
+beq r8, r0, DEATH_TIME
 br loop
+
+DEATH_TIME:
+
+# DISABLE PIE
+movia r8, HPTIMER
+movi r10, 0b1000
+stwio r10, 4(r8)
+wrctl status, r0
+
+mov r4, r0
+call getToScreen
+#VGA Timer 2
+movia r14, VGATIMER
+stwio r0, 0(r14)
+movui r10, %lo(FIVE)
+stwio r10,  8(r14)
+movui r10, %hi(FIVE)
+stwio r10, 12(r14)
+
+# start the timer
+ldwio r15, 4(r14)
+movi r15, 0b110
+stwio r15, 4(r14)
+
+pollDEATH:
+ldwio r15, (r14)
+andi r15, r15, 1
+beq r0, r15, pollDEATH
+
+stwio r0, 0(r14)
+
+br _start
+
 
 .global choosenext
 choosenext:
@@ -364,9 +405,13 @@ stw r17,  8(sp)
 stw r18, 12(sp)
 stw r19, 16(sp)
 
+
 movia r16, PET_HP
 ldw r19, (r16)
+blt r19, r0, HAS_DIED
 addi r19, r19, -50
+
+
 
 movia r16, VGA_STATE
 ldw r17, (r16)
@@ -374,6 +419,8 @@ ldw r17, (r16)
 movi r18, 5
 # move to special state table if not in default loop
 bge r17, r18, CHECK_SPECIAL
+
+
 # else determine HP level
 bge r19, r0, CHECK_DEFAULT
 blt r19, r0, CHECK_DEFAULT_LOW
@@ -391,6 +438,7 @@ CHECK_SPECIAL:
 # states 5, 6, 7, 8, 9, 10, 11 are feed states
 movi r18, 11
 ble r17, r18, SET_FEED
+bgt r17, r18, SET_PET
 br SET_TO_ZERO
 
 # #####################################################
@@ -423,6 +471,38 @@ addi r17, r17, 1
 stw r17, 0(r16)
 br DONE
 # #######################################################
+SET_PET:
+ldw r17, 0(r16)
+
+movi r18, 19
+bgt r17, r18, SET_TO_ZERO
+beq r17, r18, SET_Y_N_HURT
+# else increment
+addi r17, r17,1
+stw r17, 0 (r16)
+br DONE
+SET_Y_N_HURT:
+movia r18, HURT
+ldw r17, (r18)
+beq r17, r0, SET_TWENTY
+
+movi r18, 21
+stw r18, 0(r16)
+br DONE
+
+SET_TWENTY:
+movi r18, 20
+stw r18, 0(r16)
+
+
+br DONE
+
+HAS_DIED:
+movi r18, 4
+movia r16, VGA_STATE
+stw r18, (r16)
+br DONE
+
 DONE:
 
 
@@ -436,6 +516,7 @@ addi sp, sp, 20
 
 
 ret
+
 
 .global getToScreen
 getToScreen:
@@ -452,33 +533,19 @@ movia r16, ADDR_VGA
 movia r18, 0x25800
 add r19, r17, r18
 
-# clear VGA
-/*
-CLEAR_LOOP:
-sthio r0, (r16)
-addi r16, r16, 2
-addi r17, r17, 2
-srli r19, r16, 1
-andi r19, r19, 0x1FF
-
-movi r20, 320
-blt r19, r20, CLEAR_LOOP
-slli r19, r19, 1
-sub r16, r16, r19
-addi r16, r16, 0x400
-
-srli r19, r16, 10
-andi r19, r19 , 0xFF
-movi r20, 240
-blt r19, r20 , CLEAR_LOOP
-*/
 
 
 STARTWRTIE:
+movi r20, 1
+
+beq r4, r20, PREPET
+
+
 movia r16, VGA_STATE
 
 # r17 is now vga_state
 ldw r17, (r16)
+
 
 # state stable, to load to memory
 beq r17, r0, NORM_0
@@ -515,9 +582,43 @@ beq r17, r0, FEED_10
 addi r17, r17, -1
 
 beq r17, r0, FEED_11
+addi r17, r17, -1
 
+beq r17, r0, PET_12
+addi r17, r17, -1
+
+beq r17, r0, PET_13
+addi r17, r17, -1
+
+beq r17, r0, PET_14
+addi r17, r17, -1
+
+beq r17, r0, PET_15
+addi r17, r17, -1
+
+beq r17, r0, PET_16
+addi r17, r17, -1
+
+beq r17, r0, PET_17
+addi r17, r17, -1
+
+beq r17, r0, PET_18
+addi r17, r17, -1
+
+beq r17, r0, PET_19
+addi r17, r17, -1
+
+beq r17, r0, PET_20
+addi r17, r17, -1
+
+beq r17, r0, PET_21
+addi r17, r17, -1
 
 br NORM_0
+
+PREPET:
+movia r17, PREPET0
+br WRITE_SCREEN
 
 NORM_0:
 movia r17, IMAGE0
@@ -532,7 +633,7 @@ LOW_3:
 movia r17, IMAGE3
 br WRITE_SCREEN
 DEATH_4:
-movia r17, IMAGE0
+movia r17, DEATH
 br WRITE_SCREEN
 FEED_5:
 movia r17, FEED0
@@ -554,6 +655,36 @@ movia r17, FEED5
 br WRITE_SCREEN
 FEED_11:
 movia r17, FEED6
+br WRITE_SCREEN
+PET_12:
+movia r17, PET0
+br WRITE_SCREEN
+PET_13:
+movia r17, PET1
+br WRITE_SCREEN
+PET_14:
+movia r17, PET2
+br WRITE_SCREEN
+PET_15:
+movia r17, PET3
+br WRITE_SCREEN
+PET_16:
+movia r17, PET4
+br WRITE_SCREEN
+PET_17:
+movia r17, PET5
+br WRITE_SCREEN
+PET_18:
+movia r17, PET6
+br WRITE_SCREEN
+PET_19:
+movia r17, PET7
+br WRITE_SCREEN
+PET_20:
+movia r17, PET9
+br WRITE_SCREEN
+PET_21:
+movia r17, PET8
 br WRITE_SCREEN
 
 # Now the address is found load the image, pixel by pixel onto the screen
