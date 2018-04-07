@@ -1,4 +1,3 @@
-
 .global choosenext
 choosenext:
 # state table cheat sheet
@@ -15,6 +14,9 @@ stw r16,  4(sp)
 stw r17,  8(sp)
 stw r18, 12(sp)
 stw r19, 16(sp)
+
+
+
 
 movia r16, PET_HP
 ldw r19, (r16)

@@ -118,6 +118,7 @@ stw r8, 0(r9)
 
 loop:
 # load the image
+mov r4, 0
 call getToScreen
 # start the timer
 ldwio r15, 4(r14)

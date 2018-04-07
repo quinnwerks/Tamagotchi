@@ -13,33 +13,19 @@ movia r16, ADDR_VGA
 movia r18, 0x25800
 add r19, r17, r18
 
-# clear VGA
-/*
-CLEAR_LOOP:
-sthio r0, (r16)
-addi r16, r16, 2
-addi r17, r17, 2
-srli r19, r16, 1
-andi r19, r19, 0x1FF
-
-movi r20, 320
-blt r19, r20, CLEAR_LOOP
-slli r19, r19, 1
-sub r16, r16, r19
-addi r16, r16, 0x400
-
-srli r19, r16, 10
-andi r19, r19 , 0xFF
-movi r20, 240
-blt r19, r20 , CLEAR_LOOP
-*/
 
 
 STARTWRTIE:
+movi r20, 1
+
+beq r4, r20, PREPET
+
+
 movia r16, VGA_STATE
 
 # r17 is now vga_state
 ldw r17, (r16)
+
 
 # state stable, to load to memory
 beq r17, r0, NORM_0
@@ -109,6 +95,10 @@ beq r17, r0, PET_21
 addi r17, r17, -1
 
 br NORM_0
+
+PREPET:
+movia r17, PREPET0
+br WRITE_SCREEN
 
 NORM_0:
 movia r17, IMAGE0
